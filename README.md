@@ -140,13 +140,15 @@ JumpHandler 执行跳转
 ### 1. 克隆项目
 ```bash
 git clone https://github.com/yourname/linkflow.git
-2. 用 Android Studio 打开
+
+### 2. 用 Android Studio 打开
 File → Open → 选择项目目录
-3. Sync Gradle
+
+### 3. Sync Gradle
 
 等待依赖下载完成
 
-4. 运行项目
+### 4. 运行项目
 
 点击 ▶ Run
 
