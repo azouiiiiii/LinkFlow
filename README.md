@@ -138,36 +138,66 @@ JumpHandler 执行跳转
 ## 🚀 如何运行
 
 ### 1. 克隆项目
+
 ```bash
 git clone https://github.com/yourname/linkflow.git
+```
 
-### 2. 用 Android Studio 打开
+---
+
+### 2. 使用 Android Studio 打开项目
+
+```text id="e8hzpw"
 File → Open → 选择项目目录
+```
+
+---
 
 ### 3. Sync Gradle
 
-等待依赖下载完成
+等待 Gradle 自动下载依赖并同步完成。
+
+---
 
 ### 4. 运行项目
 
-点击 ▶ Run
+点击 Android Studio 顶部：
 
-📱 运行环境
+```text id="y5vfkm"
+▶ Run
+```
+
+即可启动应用。
+
+---
+
+## 📱 运行环境
+
+```text id="sw5e9n"
 Android Studio
 Android SDK 33+
 Kotlin 1.9+
 Gradle 8+
-⚠️ 注意事项
-Android 13+ 需开启通知权限
-模拟器建议使用 Pixel 系列
-📌 通知点击进入 App 内页面
-📌 多端同步（云端版本）
+```
 
-🔥 后续扩展方向
-📌 UI 日程列表（RecyclerView）
-📌 任务状态系统（pending / done）
-📌 重复任务支持
-📌 通知点击进入 App 内页面
-📌 多端同步（云端版本）
-📌 NLP智能设置跳转目的地
-📌 接入agent
+---
+
+## ⚠️ 注意事项
+
+* Android 13+ 需开启通知权限（POST_NOTIFICATIONS）
+* WorkManager 不保证精确秒级执行
+* 模拟器建议使用 Pixel 系列设备
+* 首次运行建议联网同步 Gradle 依赖
+
+---
+
+## 🔥 后续扩展方向
+
+* 📌 UI 日程列表（RecyclerView）
+* 📌 任务状态系统（pending / done）
+* 📌 重复任务支持
+* 📌 通知点击进入 App 内页面
+* 📌 多端同步（云端版本）
+* 📌 NLP 智能解析用户输入并自动生成跳转目标
+* 📌 接入 Agent 自动任务流系统
+
