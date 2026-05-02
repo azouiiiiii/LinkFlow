@@ -17,6 +17,7 @@ object Scheduler {
     ) {
 
         val delay = schedule.triggerTime - System.currentTimeMillis()
+        android.util.Log.d("Scheduler", "delay = $delay")
 
         if (delay <= 0) return
 

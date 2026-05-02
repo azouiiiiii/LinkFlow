@@ -1,10 +1,9 @@
-// 具体逻辑实现（什么情况调用什么动作）
-
 package com.example.linkflow.schedule
 
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.launch
 import com.example.linkflow.reminder.Scheduler
 
@@ -13,13 +12,24 @@ class ScheduleViewModel(
     application: Application
 ) : AndroidViewModel(application) {
 
+    // 🔥 给 UI 用的数据流
+    val allSchedules: Flow<List<Schedule>> = repository.allSchedules
+
     fun addSchedule(content: String, triggerTime: Long) {
+
+        android.util.Log.d("ScheduleVM", "addSchedule called")
 
         viewModelScope.launch {
 
+            val safeTriggerTime = if (triggerTime <= System.currentTimeMillis()) {
+                System.currentTimeMillis() + 5000
+            } else {
+                triggerTime
+            }
+
             val schedule = Schedule(
                 content = content,
-                triggerTime = triggerTime,
+                triggerTime = safeTriggerTime,
                 jumpUrl = "https://www.google.com"
             )
 
@@ -29,11 +39,16 @@ class ScheduleViewModel(
             // ✔ 补 id
             val savedSchedule = schedule.copy(id = id.toInt())
 
-            // ✔ context
+            // ✔ 调度提醒
             val appContext = getApplication<Application>()
-
-            // ✔ 调度
             Scheduler.scheduleReminder(appContext, savedSchedule)
+        }
+    }
+
+
+    fun deleteSchedule(schedule: Schedule) {
+        viewModelScope.launch {
+            repository.delete(schedule)
         }
     }
 }
