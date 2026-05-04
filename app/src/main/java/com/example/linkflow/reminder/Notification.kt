@@ -1,5 +1,3 @@
-// 提醒具体设计
-
 package com.example.linkflow.reminder
 
 import android.app.NotificationChannel
@@ -18,11 +16,12 @@ object NotificationHelper {
         context: Context,
         scheduleId: Int,
         title: String,
-        content: String
+        content: String,
+        url: String?
     ) {
 
         val intent = Intent(Intent.ACTION_VIEW).apply {
-            data = Uri.parse("https://www.google.com")
+            data = Uri.parse(url ?: "https://www.google.com")
         }
 
         val pendingIntent = PendingIntent.getActivity(

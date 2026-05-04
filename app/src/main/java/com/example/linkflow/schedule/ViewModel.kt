@@ -12,12 +12,9 @@ class ScheduleViewModel(
     application: Application
 ) : AndroidViewModel(application) {
 
-    // 🔥 给 UI 用的数据流
     val allSchedules: Flow<List<Schedule>> = repository.allSchedules
 
-    fun addSchedule(content: String, triggerTime: Long) {
-
-        android.util.Log.d("ScheduleVM", "addSchedule called")
+    fun addSchedule(content: String, triggerTime: Long, url: String) {
 
         viewModelScope.launch {
 
@@ -30,21 +27,16 @@ class ScheduleViewModel(
             val schedule = Schedule(
                 content = content,
                 triggerTime = safeTriggerTime,
-                jumpUrl = "https://www.google.com"
+                jumpUrl = url   // ⭐ 用户输入
             )
 
-            // ✔ 存数据库
             val id = repository.insert(schedule)
-
-            // ✔ 补 id
             val savedSchedule = schedule.copy(id = id.toInt())
 
-            // ✔ 调度提醒
             val appContext = getApplication<Application>()
             Scheduler.scheduleReminder(appContext, savedSchedule)
         }
     }
-
 
     fun deleteSchedule(schedule: Schedule) {
         viewModelScope.launch {

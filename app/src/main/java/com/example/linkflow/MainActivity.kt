@@ -25,29 +25,23 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-        // 🔔 通知权限
         if (Build.VERSION.SDK_INT >= 33) {
-            requestPermissions(
-                arrayOf(android.Manifest.permission.POST_NOTIFICATIONS),
-                1
-            )
+            requestPermissions(arrayOf(android.Manifest.permission.POST_NOTIFICATIONS), 1)
         }
 
         val addButton = findViewById<Button>(R.id.addButton)
         val inputText = findViewById<EditText>(R.id.inputText)
         val inputTime = findViewById<EditText>(R.id.inputTime)
+        val inputUrl = findViewById<EditText>(R.id.inputUrl)   // ⭐ 新增
         val confirmButton = findViewById<Button>(R.id.confirmButton)
         val recyclerView = findViewById<RecyclerView>(R.id.recyclerView)
 
-        // ViewModel 初始化
         val dao = AppDatabase.getDatabase(this).scheduleDao()
         val repository = ScheduleRepository(dao)
         val factory = ScheduleViewModelFactory(repository, application)
         viewModel = ViewModelProvider(this, factory)[ScheduleViewModel::class.java]
 
-        // ⭐ RecyclerView（带删除功能）
         adapter = ScheduleAdapter { schedule ->
-
             AlertDialog.Builder(this)
                 .setTitle("删除日程")
                 .setMessage("确定删除这个日程吗？")
@@ -61,7 +55,6 @@ class MainActivity : AppCompatActivity() {
         recyclerView.layoutManager = LinearLayoutManager(this)
         recyclerView.adapter = adapter
 
-        // 🔥 监听数据库变化（自动刷新列表）
         lifecycleScope.launch {
             viewModel.allSchedules.collect {
                 adapter.submitList(it)
@@ -70,20 +63,17 @@ class MainActivity : AppCompatActivity() {
 
         var selectedTimeMillis: Long = 0
 
-        // 🕒 时间选择
         inputTime.setOnClickListener {
             val calendar = Calendar.getInstance()
 
             TimePickerDialog(
                 this,
                 { _, hour: Int, minute: Int ->
-
                     calendar.set(Calendar.HOUR_OF_DAY, hour)
                     calendar.set(Calendar.MINUTE, minute)
                     calendar.set(Calendar.SECOND, 0)
 
                     selectedTimeMillis = calendar.timeInMillis
-
                     inputTime.setText(String.format("%02d:%02d", hour, minute))
                 },
                 calendar.get(Calendar.HOUR_OF_DAY),
@@ -92,35 +82,41 @@ class MainActivity : AppCompatActivity() {
             ).show()
         }
 
-        // ➕ 显示输入框
         addButton.setOnClickListener {
             addButton.visibility = View.GONE
             inputText.visibility = View.VISIBLE
             inputTime.visibility = View.VISIBLE
+            inputUrl.visibility = View.VISIBLE   // ⭐
+            inputUrl.visibility = View.VISIBLE
             confirmButton.visibility = View.VISIBLE
         }
 
-        // ✅ 提交日程
         confirmButton.setOnClickListener {
 
             val content = inputText.text.toString()
+            val url = inputUrl.text.toString()
 
             if (content.isBlank()) return@setOnClickListener
 
-            // 防止选择过去时间
+            if (!url.startsWith("http")) {
+                Toast.makeText(this, "请输入正确网址", Toast.LENGTH_SHORT).show()
+                return@setOnClickListener
+            }
+
             if (selectedTimeMillis <= System.currentTimeMillis()) {
                 selectedTimeMillis = System.currentTimeMillis() + 5000
             }
 
-            viewModel.addSchedule(content, selectedTimeMillis)
+            viewModel.addSchedule(content, selectedTimeMillis, url)
 
-            // 🔄 重置 UI
             inputText.setText("")
             inputTime.setText("")
+            inputUrl.setText("")
             selectedTimeMillis = 0
 
             inputText.visibility = View.GONE
             inputTime.visibility = View.GONE
+            inputUrl.visibility = View.GONE
             confirmButton.visibility = View.GONE
             addButton.visibility = View.VISIBLE
         }

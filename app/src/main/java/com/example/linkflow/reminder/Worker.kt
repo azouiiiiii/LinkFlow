@@ -17,8 +17,6 @@ class ReminderWorker(
         val scheduleId = inputData.getInt("scheduleId", -1)
 
         val dao = AppDatabase.getDatabase(applicationContext).scheduleDao()
-
-        // ✅ 现在可以安全调用 suspend 函数
         val schedule = dao.getScheduleById(scheduleId)
 
         if (schedule == null) return Result.failure()
@@ -27,7 +25,8 @@ class ReminderWorker(
             applicationContext,
             schedule.id,
             "日程提醒",
-            schedule.content
+            schedule.content,
+            schedule.jumpUrl   // ⭐ 核心
         )
 
         return Result.success()
