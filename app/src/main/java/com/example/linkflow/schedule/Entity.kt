@@ -9,11 +9,10 @@ import androidx.room.PrimaryKey
 data class Schedule(
 
     @PrimaryKey(autoGenerate = true)
-    val id: Int = 0,
+    val id: Int = 0, // 主键
 
+    val date: String,
     val content: String,
-
     val triggerTime: Long,
-
     val jumpUrl: String?
 )

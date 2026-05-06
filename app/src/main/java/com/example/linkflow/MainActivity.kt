@@ -14,12 +14,16 @@ import androidx.recyclerview.widget.RecyclerView
 import com.example.linkflow.data.AppDatabase
 import com.example.linkflow.schedule.*
 import kotlinx.coroutines.launch
+import java.text.SimpleDateFormat
 import java.util.*
 
 class MainActivity : AppCompatActivity() {
 
     private lateinit var viewModel: ScheduleViewModel
     private lateinit var adapter: ScheduleAdapter
+
+    // 用于记录当前日历选中的日期字符串 (格式: yyyy-MM-dd)
+    private var currentSelectedDate: String = ""
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -29,18 +33,27 @@ class MainActivity : AppCompatActivity() {
             requestPermissions(arrayOf(android.Manifest.permission.POST_NOTIFICATIONS), 1)
         }
 
+        val calendarView = findViewById<CalendarView>(R.id.calendarView)
         val addButton = findViewById<Button>(R.id.addButton)
+        val inputContainer = findViewById<LinearLayout>(R.id.inputContainer)
         val inputText = findViewById<EditText>(R.id.inputText)
         val inputTime = findViewById<EditText>(R.id.inputTime)
-        val inputUrl = findViewById<EditText>(R.id.inputUrl)   // ⭐ 新增
+        val inputUrl = findViewById<EditText>(R.id.inputUrl)
         val confirmButton = findViewById<Button>(R.id.confirmButton)
         val recyclerView = findViewById<RecyclerView>(R.id.recyclerView)
 
+        // 初始化 ViewModel
         val dao = AppDatabase.getDatabase(this).scheduleDao()
         val repository = ScheduleRepository(dao)
         val factory = ScheduleViewModelFactory(repository, application)
         viewModel = ViewModelProvider(this, factory)[ScheduleViewModel::class.java]
 
+        // 1. 初始化当前日期为今天，并告知 ViewModel
+        val sdf = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
+        currentSelectedDate = sdf.format(Date())
+        viewModel.setSelectedDate(currentSelectedDate)
+
+        // 设置适配器
         adapter = ScheduleAdapter { schedule ->
             AlertDialog.Builder(this)
                 .setTitle("删除日程")
@@ -51,20 +64,36 @@ class MainActivity : AppCompatActivity() {
                 .setNegativeButton("取消", null)
                 .show()
         }
-
         recyclerView.layoutManager = LinearLayoutManager(this)
         recyclerView.adapter = adapter
 
         lifecycleScope.launch {
-            viewModel.allSchedules.collect {
-                adapter.submitList(it)
+            viewModel.schedulesForSelectedDate.collect { filteredList ->
+                adapter.submitList(filteredList)
             }
+        }
+
+        calendarView.setOnDateChangeListener { _, year, month, dayOfMonth ->
+            // 月份从 0 开始计数
+            currentSelectedDate = String.format("%d-%02d-%02d", year, month + 1, dayOfMonth)
+
+            // 通知 ViewModel 日期变了，UI 会通过上面的 collect 自动刷新
+            viewModel.setSelectedDate(currentSelectedDate)
+
+            // 切换日期时，隐藏输入框
+            inputContainer.visibility = View.GONE
+            addButton.visibility = View.VISIBLE
         }
 
         var selectedTimeMillis: Long = 0
 
         inputTime.setOnClickListener {
             val calendar = Calendar.getInstance()
+            // 确保时间戳的日期部分与当前日历选中的一致
+            val dateParts = currentSelectedDate.split("-")
+            calendar.set(Calendar.YEAR, dateParts[0].toInt())
+            calendar.set(Calendar.MONTH, dateParts[1].toInt() - 1)
+            calendar.set(Calendar.DAY_OF_MONTH, dateParts[2].toInt())
 
             TimePickerDialog(
                 this,
@@ -84,40 +113,34 @@ class MainActivity : AppCompatActivity() {
 
         addButton.setOnClickListener {
             addButton.visibility = View.GONE
-            inputText.visibility = View.VISIBLE
-            inputTime.visibility = View.VISIBLE
-            inputUrl.visibility = View.VISIBLE   // ⭐
-            inputUrl.visibility = View.VISIBLE
-            confirmButton.visibility = View.VISIBLE
+            inputContainer.visibility = View.VISIBLE
         }
 
         confirmButton.setOnClickListener {
-
             val content = inputText.text.toString()
             val url = inputUrl.text.toString()
 
             if (content.isBlank()) return@setOnClickListener
 
-            if (!url.startsWith("http")) {
+            if (url.isNotEmpty() && !url.startsWith("http")) {
                 Toast.makeText(this, "请输入正确网址", Toast.LENGTH_SHORT).show()
                 return@setOnClickListener
             }
 
-            if (selectedTimeMillis <= System.currentTimeMillis()) {
+            // 如果没选时间，默认使用当前时刻（但日期必须对齐）
+            if (selectedTimeMillis == 0L) {
                 selectedTimeMillis = System.currentTimeMillis() + 5000
             }
 
-            viewModel.addSchedule(content, selectedTimeMillis, url)
+            // 调用 ViewModel 添加日程
+            viewModel.addSchedule(content, selectedTimeMillis, url, currentSelectedDate)
 
+            // 重置 UI
             inputText.setText("")
             inputTime.setText("")
             inputUrl.setText("")
-            selectedTimeMillis = 0
-
-            inputText.visibility = View.GONE
-            inputTime.visibility = View.GONE
-            inputUrl.visibility = View.GONE
-            confirmButton.visibility = View.GONE
+            selectedTimeMillis = 0 // 重置选中的时间戳
+            inputContainer.visibility = View.GONE
             addButton.visibility = View.VISIBLE
         }
     }
