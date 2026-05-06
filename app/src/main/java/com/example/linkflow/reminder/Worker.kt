@@ -1,19 +1,18 @@
-// 动作调用（静态提醒/动态提醒）
-
 package com.example.linkflow.reminder
 
 import android.content.Context
-import androidx.work.Worker
+import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
-
 import com.example.linkflow.data.AppDatabase
 
 class ReminderWorker(
     context: Context,
     params: WorkerParameters
-) : Worker(context, params) {
+) : CoroutineWorker(context, params) {
 
-    override fun doWork(): Result {
+    override suspend fun doWork(): Result {
+
+        android.util.Log.d("Worker", "Worker triggered")
 
         val scheduleId = inputData.getInt("scheduleId", -1)
 
@@ -26,7 +25,8 @@ class ReminderWorker(
             applicationContext,
             schedule.id,
             "日程提醒",
-            schedule.content
+            schedule.content,
+            schedule.jumpUrl   // ⭐ 核心
         )
 
         return Result.success()
