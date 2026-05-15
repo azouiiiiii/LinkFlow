@@ -1,9 +1,13 @@
 package com.example.linkflow.reminder
 
 import android.content.Context
+import android.content.Intent
+import android.net.Uri
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
 import com.example.linkflow.data.AppDatabase
+import com.example.linkflow.jump.JumpManager
+import com.example.linkflow.schedule.ReminderType
 
 class ReminderWorker(
     context: Context,
@@ -12,21 +16,27 @@ class ReminderWorker(
 
     override suspend fun doWork(): Result {
 
-        android.util.Log.d("Worker", "Worker triggered")
-
         val scheduleId = inputData.getInt("scheduleId", -1)
 
         val dao = AppDatabase.getDatabase(applicationContext).scheduleDao()
-        val schedule = dao.getScheduleById(scheduleId)
 
-        if (schedule == null) return Result.failure()
+        val schedule = dao.getScheduleById(scheduleId)
+            ?: return Result.failure()
+
+        val reminderTypeStr = inputData.getString("reminderType") ?: "STATIC"
+        val reminderType = ReminderType.valueOf(reminderTypeStr)
+
+        val intent = if (reminderType == ReminderType.DYNAMIC) {
+            JumpManager.jump(applicationContext, schedule)
+        } else {
+            null
+        }
 
         NotificationHelper.showNotification(
-            applicationContext,
-            schedule.id,
-            "日程提醒",
-            schedule.content,
-            schedule.jumpUrl   // ⭐ 核心
+            context = applicationContext,
+            title = "日程提醒",
+            content = schedule.content,
+            intent = intent
         )
 
         return Result.success()

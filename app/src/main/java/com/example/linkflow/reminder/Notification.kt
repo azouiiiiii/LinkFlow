@@ -5,7 +5,6 @@ import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
-import android.net.Uri
 import androidx.core.app.NotificationCompat
 
 object NotificationHelper {
@@ -14,41 +13,47 @@ object NotificationHelper {
 
     fun showNotification(
         context: Context,
-        scheduleId: Int,
         title: String,
         content: String,
-        url: String?
+        intent: Intent? = null
     ) {
 
-        val intent = Intent(Intent.ACTION_VIEW).apply {
-            data = Uri.parse(url ?: "https://www.google.com")
-        }
-
-        val pendingIntent = PendingIntent.getActivity(
-            context,
-            scheduleId,
-            intent,
-            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-        )
-
         val manager =
-            context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+            context.getSystemService(Context.NOTIFICATION_SERVICE)
+                    as NotificationManager
 
         val channel = NotificationChannel(
             CHANNEL_ID,
             "Reminder",
             NotificationManager.IMPORTANCE_HIGH
         )
+
         manager.createNotificationChannel(channel)
 
-        val notification = NotificationCompat.Builder(context, CHANNEL_ID)
-            .setSmallIcon(android.R.drawable.ic_dialog_info)
-            .setContentTitle(title)
-            .setContentText(content)
-            .setContentIntent(pendingIntent)
-            .setAutoCancel(true)
-            .build()
+        val builder =
+            NotificationCompat.Builder(context, CHANNEL_ID)
+                .setSmallIcon(android.R.drawable.ic_dialog_info)
+                .setContentTitle(title)
+                .setContentText(content)
+                .setAutoCancel(true)
 
-        manager.notify(scheduleId, notification)
+        if (intent != null) {
+
+            val pendingIntent =
+                PendingIntent.getActivity(
+                    context,
+                    0,
+                    intent,
+                    PendingIntent.FLAG_UPDATE_CURRENT or
+                            PendingIntent.FLAG_IMMUTABLE
+                )
+
+            builder.setContentIntent(pendingIntent)
+        }
+
+        manager.notify(
+            System.currentTimeMillis().toInt(),
+            builder.build()
+        )
     }
 }

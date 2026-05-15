@@ -15,14 +15,23 @@ object Scheduler {
         context: Context,
         schedule: Schedule
     ) {
+        enqueueWork(context, schedule)
+    }
+
+    private fun enqueueWork(
+        context: Context,
+        schedule: Schedule
+    ) {
 
         val delay = schedule.triggerTime - System.currentTimeMillis()
+
         android.util.Log.d("Scheduler", "delay = $delay")
 
         if (delay <= 0) return
 
         val inputData = workDataOf(
-            "scheduleId" to schedule.id
+            "scheduleId" to schedule.id,
+            "reminderType" to schedule.reminderType.name
         )
 
         val request = OneTimeWorkRequestBuilder<ReminderWorker>()

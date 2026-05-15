@@ -1,85 +1,159 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.constraintlayout.widget.ConstraintLayout
+<androidx.core.widget.NestedScrollView
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent">
 
-    <!-- 1. 日历视图：放在最顶端 -->
-    <CalendarView
-        android:id="@+id/calendarView"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent" />
-
-    <!-- 2. 控制/添加按钮 -->
-    <Button
-        android:id="@+id/addButton"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="添加日程"
-        android:layout_marginTop="8dp"
-        app:layout_constraintTop_toBottomOf="@id/calendarView"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"/>
-
-    <!-- 3. 输入区域：用容器包裹，方便控制显隐 -->
-    <LinearLayout
-        android:id="@+id/inputContainer"
+    <androidx.constraintlayout.widget.ConstraintLayout
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="vertical"
-        android:padding="16dp"
-        android:visibility="gone"
-        android:background="#F5F5F5"
-        app:layout_constraintTop_toBottomOf="@id/addButton"
-        app:layout_constraintStart_toStartOf="parent">
+        android:layout_height="wrap_content">
 
-        <EditText
-            android:id="@+id/inputText"
-            android:layout_width="match_parent"
+        <!-- 日历 -->
+        <CalendarView
+            android:id="@+id/calendarView"
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:hint="输入日程内容"/>
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent" />
 
-        <EditText
-            android:id="@+id/inputTime"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:hint="点击选择具体时间"
-            android:focusable="false"
-            android:clickable="true"
-            android:layout_marginTop="8dp"/>
-
-        <EditText
-            android:id="@+id/inputUrl"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:hint="输入跳转网址 (https://)"
-            android:layout_marginTop="8dp"/>
-
+        <!-- 添加按钮 -->
         <Button
-            android:id="@+id/confirmButton"
+            android:id="@+id/addButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="添加日程"
+            android:layout_marginTop="8dp"
+            app:layout_constraintTop_toBottomOf="@id/calendarView"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"/>
+
+        <!-- 输入区域 -->
+        <LinearLayout
+            android:id="@+id/inputContainer"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="确定保存"
-            android:layout_marginTop="8dp"/>
-    </LinearLayout>
+            android:orientation="vertical"
+            android:padding="16dp"
+            android:visibility="gone"
+            android:background="#F5F5F5"
+            app:layout_constraintTop_toBottomOf="@id/addButton"
+            app:layout_constraintStart_toStartOf="parent">
 
-    <!-- 4. 日程列表：显示所选日期的日程 -->
-    <androidx.recyclerview.widget.RecyclerView
-        android:id="@+id/recyclerView"
-        android:layout_width="0dp"
-        android:layout_height="0dp"
-        android:layout_marginTop="8dp"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="0.0"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/inputContainer"
-        app:layout_constraintVertical_bias="1.0"
-        tools:listitem="@layout/item_schedule" />
+            <!-- 提醒类型 -->
+            <RadioGroup
+                android:id="@+id/reminderTypeGroup"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:layout_marginTop="8dp">
 
-</androidx.constraintlayout.widget.ConstraintLayout>
+                <RadioButton
+                    android:id="@+id/staticBtn"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="静态提醒" />
+
+                <RadioButton
+                    android:id="@+id/dynamicBtn"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="动态提醒" />
+            </RadioGroup>
+
+            <!-- 日程内容 -->
+            <EditText
+                android:id="@+id/inputText"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:hint="输入日程内容"/>
+
+            <!-- 时间 -->
+            <EditText
+                android:id="@+id/inputTime"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:hint="点击选择具体时间"
+                android:focusable="false"
+                android:clickable="true"
+                android:layout_marginTop="8dp"/>
+
+            <!-- App 选择 -->
+            <RadioGroup
+                android:id="@+id/appGroup"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:layout_marginTop="12dp">
+
+                <RadioButton
+                    android:id="@+id/wechatBtn"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="微信" />
+
+                <RadioButton
+                    android:id="@+id/biliBtn"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Bilibili" />
+
+                <RadioButton
+                    android:id="@+id/zhihuBtn"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="知乎" />
+
+                <RadioButton
+                    android:id="@+id/alipayBtn"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="支付宝" />
+
+                <RadioButton
+                    android:id="@+id/tencentBtn"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="腾讯会议" />
+
+                <RadioButton
+                    android:id="@+id/browserBtn"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="浏览器" />
+            </RadioGroup>
+
+            <!-- 附加输入 -->
+            <EditText
+                android:id="@+id/extraInput"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:hint="附加信息（会议号、链接等，可选）"
+                android:visibility="gone"/>
+
+            <!-- 保存 -->
+            <Button
+                android:id="@+id/confirmButton"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="保存"
+                android:layout_marginTop="8dp"/>
+        </LinearLayout>
+
+        <!-- 日程列表 -->
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/recyclerView"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:nestedScrollingEnabled="false"
+            app:layout_constraintTop_toBottomOf="@id/inputContainer"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            tools:listitem="@layout/item_schedule" />
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
+</androidx.core.widget.NestedScrollView>

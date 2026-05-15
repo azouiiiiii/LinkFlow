@@ -5,6 +5,14 @@ package com.example.linkflow.schedule
 import androidx.room.Entity
 import androidx.room.PrimaryKey
 
+import com.example.linkflow.AppType
+
+
+enum class ReminderType {
+    STATIC,
+    DYNAMIC
+}
+
 @Entity(tableName = "schedule")
 data class Schedule(
 
@@ -14,5 +22,7 @@ data class Schedule(
     val date: String,
     val content: String,
     val triggerTime: Long,
-    val jumpUrl: String?
+    val appType: AppType,
+    val extraData: String,
+    val reminderType: ReminderType
 )

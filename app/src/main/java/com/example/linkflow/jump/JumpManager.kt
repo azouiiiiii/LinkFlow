@@ -3,25 +3,27 @@
 package com.example.linkflow.jump
 
 import android.content.Context
+import android.content.Intent
+
+import com.example.linkflow.AppType
+import com.example.linkflow.schedule.Schedule
 
 object JumpManager {
 
-    // 当前只支持浏览器
-    private val browserHandler = BrowserJumpHandler()
+    fun jump(
+        context: Context,
+        schedule: Schedule
+    ): Intent? {
 
-    fun jump(context: Context, url: String?) {
+        val handler: JumpHandler = when (schedule.appType) {
 
-        if (url.isNullOrEmpty()) return
+            AppType.BROWSER ->
+                BrowserJumpHandler()
 
-        when {
-            url.startsWith("http") || url.startsWith("https") -> {
-                browserHandler.handle(context, url)
-            }
-
-            else -> {
-                // 兜底：也走浏览器
-                browserHandler.handle(context, url)
-            }
+            else ->
+                AppJumpHandler()
         }
+
+        return handler.handle(context, schedule)
     }
 }

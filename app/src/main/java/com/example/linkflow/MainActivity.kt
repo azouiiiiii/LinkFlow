@@ -5,8 +5,8 @@ import android.os.Build
 import android.os.Bundle
 import android.view.View
 import android.widget.*
-import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.app.AlertDialog
+import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -22,7 +22,6 @@ class MainActivity : AppCompatActivity() {
     private lateinit var viewModel: ScheduleViewModel
     private lateinit var adapter: ScheduleAdapter
 
-    // 用于记录当前日历选中的日期字符串 (格式: yyyy-MM-dd)
     private var currentSelectedDate: String = ""
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -38,22 +37,26 @@ class MainActivity : AppCompatActivity() {
         val inputContainer = findViewById<LinearLayout>(R.id.inputContainer)
         val inputText = findViewById<EditText>(R.id.inputText)
         val inputTime = findViewById<EditText>(R.id.inputTime)
-        val inputUrl = findViewById<EditText>(R.id.inputUrl)
+
+        // 以后 XML 里新增
+        val appGroup = findViewById<RadioGroup>(R.id.appGroup)
+        val extraInput = findViewById<EditText>(R.id.extraInput)
+
         val confirmButton = findViewById<Button>(R.id.confirmButton)
+
+        val reminderGroup = findViewById<RadioGroup>(R.id.reminderTypeGroup)
+
         val recyclerView = findViewById<RecyclerView>(R.id.recyclerView)
 
-        // 初始化 ViewModel
         val dao = AppDatabase.getDatabase(this).scheduleDao()
         val repository = ScheduleRepository(dao)
         val factory = ScheduleViewModelFactory(repository, application)
         viewModel = ViewModelProvider(this, factory)[ScheduleViewModel::class.java]
 
-        // 1. 初始化当前日期为今天，并告知 ViewModel
         val sdf = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
         currentSelectedDate = sdf.format(Date())
         viewModel.setSelectedDate(currentSelectedDate)
 
-        // 设置适配器
         adapter = ScheduleAdapter { schedule ->
             AlertDialog.Builder(this)
                 .setTitle("删除日程")
@@ -64,46 +67,115 @@ class MainActivity : AppCompatActivity() {
                 .setNegativeButton("取消", null)
                 .show()
         }
+
         recyclerView.layoutManager = LinearLayoutManager(this)
         recyclerView.adapter = adapter
 
         lifecycleScope.launch {
-            viewModel.schedulesForSelectedDate.collect { filteredList ->
-                adapter.submitList(filteredList)
+            viewModel.schedulesForSelectedDate.collect {
+                adapter.submitList(it)
             }
         }
 
-        calendarView.setOnDateChangeListener { _, year, month, dayOfMonth ->
-            // 月份从 0 开始计数
-            currentSelectedDate = String.format("%d-%02d-%02d", year, month + 1, dayOfMonth)
+        calendarView.setOnDateChangeListener { _, year, month, day ->
+            currentSelectedDate =
+                String.format("%d-%02d-%02d", year, month + 1, day)
 
-            // 通知 ViewModel 日期变了，UI 会通过上面的 collect 自动刷新
             viewModel.setSelectedDate(currentSelectedDate)
 
-            // 切换日期时，隐藏输入框
             inputContainer.visibility = View.GONE
             addButton.visibility = View.VISIBLE
         }
 
-        var selectedTimeMillis: Long = 0
+        var selectedTimeMillis = 0L
+
+        var selectedReminderType: ReminderType =
+            ReminderType.STATIC
+
+        var selectedAppType: AppType =
+            AppType.WECHAT
+
+        reminderGroup.setOnCheckedChangeListener { _, checkedId ->
+
+            selectedReminderType = when (checkedId) {
+
+                R.id.dynamicBtn -> {
+                    appGroup.visibility = View.VISIBLE
+                    ReminderType.DYNAMIC
+                }
+
+                else -> {
+                    appGroup.visibility = View.GONE
+                    extraInput.visibility = View.GONE
+                    ReminderType.STATIC
+                }
+            }
+        }
+
+        // 以后 XML 对齐后启用
+        appGroup.setOnCheckedChangeListener { _, checkedId ->
+
+            when (checkedId) {
+
+                R.id.wechatBtn -> {
+                    selectedAppType = AppType.WECHAT
+                    extraInput.visibility = View.GONE
+                }
+
+                R.id.biliBtn -> {
+                    selectedAppType = AppType.BILIBILI
+                    extraInput.visibility = View.GONE
+                }
+
+                R.id.zhihuBtn -> {
+                    selectedAppType = AppType.ZHIHU
+                    extraInput.visibility = View.GONE
+                }
+
+                R.id.alipayBtn -> {
+                    selectedAppType = AppType.ALIPAY
+                    extraInput.visibility = View.GONE
+                }
+
+                R.id.tencentBtn -> {
+                    selectedAppType = AppType.TENCENT_MEETING
+
+                    extraInput.visibility = View.VISIBLE
+                    extraInput.hint = "请输入会议号（可选）"
+                }
+
+                R.id.browserBtn -> {
+                    selectedAppType = AppType.BROWSER
+
+                    extraInput.visibility = View.VISIBLE
+                    extraInput.hint = "请输入网址（可选）"
+                }
+            }
+        }
 
         inputTime.setOnClickListener {
+
             val calendar = Calendar.getInstance()
-            // 确保时间戳的日期部分与当前日历选中的一致
-            val dateParts = currentSelectedDate.split("-")
-            calendar.set(Calendar.YEAR, dateParts[0].toInt())
-            calendar.set(Calendar.MONTH, dateParts[1].toInt() - 1)
-            calendar.set(Calendar.DAY_OF_MONTH, dateParts[2].toInt())
+
+            val parts = currentSelectedDate.split("-")
+
+            calendar.set(Calendar.YEAR, parts[0].toInt())
+            calendar.set(Calendar.MONTH, parts[1].toInt() - 1)
+            calendar.set(Calendar.DAY_OF_MONTH, parts[2].toInt())
 
             TimePickerDialog(
                 this,
-                { _, hour: Int, minute: Int ->
+                { _, hour, minute ->
+
                     calendar.set(Calendar.HOUR_OF_DAY, hour)
                     calendar.set(Calendar.MINUTE, minute)
                     calendar.set(Calendar.SECOND, 0)
 
                     selectedTimeMillis = calendar.timeInMillis
-                    inputTime.setText(String.format("%02d:%02d", hour, minute))
+
+                    inputTime.setText(
+                        String.format("%02d:%02d", hour, minute)
+                    )
                 },
                 calendar.get(Calendar.HOUR_OF_DAY),
                 calendar.get(Calendar.MINUTE),
@@ -112,34 +184,68 @@ class MainActivity : AppCompatActivity() {
         }
 
         addButton.setOnClickListener {
-            addButton.visibility = View.GONE
+
             inputContainer.visibility = View.VISIBLE
+            addButton.visibility = View.GONE
+
+            selectedTimeMillis = 0L
+
+            reminderGroup.check(R.id.staticBtn)
+
+            selectedReminderType = ReminderType.STATIC
+            appGroup.visibility = View.GONE
+            selectedAppType = AppType.WECHAT
+
+            extraInput.setText("")
         }
 
         confirmButton.setOnClickListener {
+
             val content = inputText.text.toString()
-            val url = inputUrl.text.toString()
 
-            if (content.isBlank()) return@setOnClickListener
+            val extraData =
+                extraInput.text.toString()
 
-            if (url.isNotEmpty() && !url.startsWith("http")) {
-                Toast.makeText(this, "请输入正确网址", Toast.LENGTH_SHORT).show()
+            if (content.isBlank()) {
                 return@setOnClickListener
             }
 
-            // 如果没选时间，默认使用当前时刻（但日期必须对齐）
-            if (selectedTimeMillis == 0L) {
-                selectedTimeMillis = System.currentTimeMillis() + 5000
+            if (
+                selectedAppType == AppType.BROWSER &&
+                extraData.isNotEmpty() &&
+                !extraData.startsWith("http")
+            ) {
+
+                Toast.makeText(
+                    this,
+                    "请输入正确网址",
+                    Toast.LENGTH_SHORT
+                ).show()
+
+                return@setOnClickListener
             }
 
-            // 调用 ViewModel 添加日程
-            viewModel.addSchedule(content, selectedTimeMillis, url, currentSelectedDate)
+            if (selectedTimeMillis == 0L) {
 
-            // 重置 UI
+                selectedTimeMillis =
+                    System.currentTimeMillis() + 5000
+            }
+
+            viewModel.addSchedule(
+                content,
+                selectedTimeMillis,
+                currentSelectedDate,
+                selectedAppType,
+                extraData,
+                selectedReminderType
+            )
+
             inputText.setText("")
             inputTime.setText("")
-            inputUrl.setText("")
-            selectedTimeMillis = 0 // 重置选中的时间戳
+            extraInput.setText("")
+
+            selectedTimeMillis = 0L
+
             inputContainer.visibility = View.GONE
             addButton.visibility = View.VISIBLE
         }
