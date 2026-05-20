@@ -23,6 +23,8 @@ class MainActivity : AppCompatActivity() {
     private lateinit var adapter: ScheduleAdapter
 
     private var currentSelectedDate: String = ""
+    private var editingSchedule: Schedule? = null
+    private var selectedTimeMillis = 0L
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -37,15 +39,10 @@ class MainActivity : AppCompatActivity() {
         val inputContainer = findViewById<LinearLayout>(R.id.inputContainer)
         val inputText = findViewById<EditText>(R.id.inputText)
         val inputTime = findViewById<EditText>(R.id.inputTime)
-
-        // 以后 XML 里新增
         val appGroup = findViewById<RadioGroup>(R.id.appGroup)
         val extraInput = findViewById<EditText>(R.id.extraInput)
-
         val confirmButton = findViewById<Button>(R.id.confirmButton)
-
         val reminderGroup = findViewById<RadioGroup>(R.id.reminderTypeGroup)
-
         val recyclerView = findViewById<RecyclerView>(R.id.recyclerView)
 
         val dao = AppDatabase.getDatabase(this).scheduleDao()
@@ -57,16 +54,25 @@ class MainActivity : AppCompatActivity() {
         currentSelectedDate = sdf.format(Date())
         viewModel.setSelectedDate(currentSelectedDate)
 
-        adapter = ScheduleAdapter { schedule ->
-            AlertDialog.Builder(this)
-                .setTitle("删除日程")
-                .setMessage("确定删除这个日程吗？")
-                .setPositiveButton("删除") { _, _ ->
-                    viewModel.deleteSchedule(schedule)
-                }
-                .setNegativeButton("取消", null)
-                .show()
-        }
+        adapter = ScheduleAdapter(
+            onItemClick = { schedule ->
+                AlertDialog.Builder(this)
+                    .setTitle("删除日程")
+                    .setMessage("确定删除这个日程吗？")
+                    .setPositiveButton("删除") { _, _ ->
+                        viewModel.deleteSchedule(schedule)
+                    }
+                    .setNegativeButton("取消", null)
+                    .show()
+            },
+            onItemLongClick = { schedule ->
+                populateFormForEdit(
+                    schedule, inputText, inputTime,
+                    reminderGroup, appGroup, extraInput,
+                    confirmButton
+                )
+            }
+        )
 
         recyclerView.layoutManager = LinearLayoutManager(this)
         recyclerView.adapter = adapter
@@ -80,30 +86,19 @@ class MainActivity : AppCompatActivity() {
         calendarView.setOnDateChangeListener { _, year, month, day ->
             currentSelectedDate =
                 String.format("%d-%02d-%02d", year, month + 1, day)
-
             viewModel.setSelectedDate(currentSelectedDate)
-
-            inputContainer.visibility = View.GONE
-            addButton.visibility = View.VISIBLE
+            resetForm(inputContainer, addButton, confirmButton)
         }
 
-        var selectedTimeMillis = 0L
-
-        var selectedReminderType: ReminderType =
-            ReminderType.STATIC
-
-        var selectedAppType: AppType =
-            AppType.WECHAT
+        var selectedReminderType = ReminderType.STATIC
+        var selectedAppType = AppType.WECHAT
 
         reminderGroup.setOnCheckedChangeListener { _, checkedId ->
-
             selectedReminderType = when (checkedId) {
-
                 R.id.dynamicBtn -> {
                     appGroup.visibility = View.VISIBLE
                     ReminderType.DYNAMIC
                 }
-
                 else -> {
                     appGroup.visibility = View.GONE
                     extraInput.visibility = View.GONE
@@ -112,41 +107,33 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
-        // 以后 XML 对齐后启用
         appGroup.setOnCheckedChangeListener { _, checkedId ->
-
             when (checkedId) {
-
                 R.id.wechatBtn -> {
                     selectedAppType = AppType.WECHAT
                     extraInput.visibility = View.GONE
                 }
-
                 R.id.biliBtn -> {
                     selectedAppType = AppType.BILIBILI
-                    extraInput.visibility = View.GONE
+                    extraInput.visibility = View.VISIBLE
+                    extraInput.hint = "请输入视频BV号（可选）"
                 }
-
                 R.id.zhihuBtn -> {
                     selectedAppType = AppType.ZHIHU
-                    extraInput.visibility = View.GONE
+                    extraInput.visibility = View.VISIBLE
+                    extraInput.hint = "请输入问题ID（可选）"
                 }
-
                 R.id.alipayBtn -> {
                     selectedAppType = AppType.ALIPAY
                     extraInput.visibility = View.GONE
                 }
-
                 R.id.tencentBtn -> {
                     selectedAppType = AppType.TENCENT_MEETING
-
                     extraInput.visibility = View.VISIBLE
                     extraInput.hint = "请输入会议号（可选）"
                 }
-
                 R.id.browserBtn -> {
                     selectedAppType = AppType.BROWSER
-
                     extraInput.visibility = View.VISIBLE
                     extraInput.hint = "请输入网址（可选）"
                 }
@@ -154,11 +141,8 @@ class MainActivity : AppCompatActivity() {
         }
 
         inputTime.setOnClickListener {
-
             val calendar = Calendar.getInstance()
-
             val parts = currentSelectedDate.split("-")
-
             calendar.set(Calendar.YEAR, parts[0].toInt())
             calendar.set(Calendar.MONTH, parts[1].toInt() - 1)
             calendar.set(Calendar.DAY_OF_MONTH, parts[2].toInt())
@@ -166,16 +150,11 @@ class MainActivity : AppCompatActivity() {
             TimePickerDialog(
                 this,
                 { _, hour, minute ->
-
                     calendar.set(Calendar.HOUR_OF_DAY, hour)
                     calendar.set(Calendar.MINUTE, minute)
                     calendar.set(Calendar.SECOND, 0)
-
                     selectedTimeMillis = calendar.timeInMillis
-
-                    inputTime.setText(
-                        String.format("%02d:%02d", hour, minute)
-                    )
+                    inputTime.setText(String.format("%02d:%02d", hour, minute))
                 },
                 calendar.get(Calendar.HOUR_OF_DAY),
                 calendar.get(Calendar.MINUTE),
@@ -184,27 +163,23 @@ class MainActivity : AppCompatActivity() {
         }
 
         addButton.setOnClickListener {
-
+            editingSchedule = null
             inputContainer.visibility = View.VISIBLE
             addButton.visibility = View.GONE
-
             selectedTimeMillis = 0L
-
             reminderGroup.check(R.id.staticBtn)
-
             selectedReminderType = ReminderType.STATIC
             appGroup.visibility = View.GONE
             selectedAppType = AppType.WECHAT
-
             extraInput.setText("")
+            inputText.setText("")
+            inputTime.setText("")
+            confirmButton.text = "保存"
         }
 
         confirmButton.setOnClickListener {
-
             val content = inputText.text.toString()
-
-            val extraData =
-                extraInput.text.toString()
+            val extraData = extraInput.text.toString()
 
             if (content.isBlank()) {
                 return@setOnClickListener
@@ -213,41 +188,110 @@ class MainActivity : AppCompatActivity() {
             if (
                 selectedAppType == AppType.BROWSER &&
                 extraData.isNotEmpty() &&
-                !extraData.startsWith("http")
+                !extraData.startsWith("http://") &&
+                !extraData.startsWith("https://")
             ) {
-
                 Toast.makeText(
                     this,
-                    "请输入正确网址",
+                    "请输入正确网址（以 http:// 或 https:// 开头）",
                     Toast.LENGTH_SHORT
                 ).show()
-
                 return@setOnClickListener
             }
 
             if (selectedTimeMillis == 0L) {
-
-                selectedTimeMillis =
-                    System.currentTimeMillis() + 5000
+                selectedTimeMillis = System.currentTimeMillis() + 5000
             }
 
-            viewModel.addSchedule(
-                content,
-                selectedTimeMillis,
-                currentSelectedDate,
-                selectedAppType,
-                extraData,
-                selectedReminderType
-            )
+            if (selectedTimeMillis <= System.currentTimeMillis()) {
+                Toast.makeText(
+                    this,
+                    "所选时间已过期，已自动调整为当前时间",
+                    Toast.LENGTH_SHORT
+                ).show()
+                selectedTimeMillis = System.currentTimeMillis() + 5000
+            }
 
-            inputText.setText("")
-            inputTime.setText("")
-            extraInput.setText("")
+            val currentEdit = editingSchedule
+            if (currentEdit != null) {
+                viewModel.updateSchedule(
+                    currentEdit.copy(
+                        content = content,
+                        triggerTime = selectedTimeMillis,
+                        date = currentSelectedDate,
+                        appType = selectedAppType,
+                        extraData = extraData,
+                        reminderType = selectedReminderType
+                    )
+                )
+            } else {
+                viewModel.addSchedule(
+                    content,
+                    selectedTimeMillis,
+                    currentSelectedDate,
+                    selectedAppType,
+                    extraData,
+                    selectedReminderType
+                )
+            }
 
-            selectedTimeMillis = 0L
-
-            inputContainer.visibility = View.GONE
-            addButton.visibility = View.VISIBLE
+            resetForm(inputContainer, addButton, confirmButton)
         }
+    }
+
+    private fun populateFormForEdit(
+        schedule: Schedule,
+        inputText: EditText,
+        inputTime: EditText,
+        reminderGroup: RadioGroup,
+        appGroup: RadioGroup,
+        extraInput: EditText,
+        confirmButton: Button
+    ) {
+        editingSchedule = schedule
+        selectedTimeMillis = schedule.triggerTime
+
+        inputText.setText(schedule.content)
+        inputTime.setText(
+            SimpleDateFormat("HH:mm", Locale.getDefault())
+                .format(Date(schedule.triggerTime))
+        )
+
+        when (schedule.reminderType) {
+            ReminderType.DYNAMIC -> {
+                reminderGroup.check(R.id.dynamicBtn)
+                appGroup.visibility = View.VISIBLE
+            }
+            ReminderType.STATIC -> {
+                reminderGroup.check(R.id.staticBtn)
+                appGroup.visibility = View.GONE
+            }
+        }
+
+        when (schedule.appType) {
+            AppType.WECHAT -> appGroup.check(R.id.wechatBtn)
+            AppType.BILIBILI -> appGroup.check(R.id.biliBtn)
+            AppType.ZHIHU -> appGroup.check(R.id.zhihuBtn)
+            AppType.ALIPAY -> appGroup.check(R.id.alipayBtn)
+            AppType.TENCENT_MEETING -> appGroup.check(R.id.tencentBtn)
+            AppType.BROWSER -> appGroup.check(R.id.browserBtn)
+        }
+
+        extraInput.setText(schedule.extraData)
+        confirmButton.text = "更新"
+
+        findViewById<LinearLayout>(R.id.inputContainer).visibility = View.VISIBLE
+        findViewById<Button>(R.id.addButton).visibility = View.GONE
+    }
+
+    private fun resetForm(
+        inputContainer: LinearLayout,
+        addButton: Button,
+        confirmButton: Button
+    ) {
+        editingSchedule = null
+        inputContainer.visibility = View.GONE
+        addButton.visibility = View.VISIBLE
+        confirmButton.text = "保存"
     }
 }

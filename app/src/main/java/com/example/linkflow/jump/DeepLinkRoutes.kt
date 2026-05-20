@@ -12,6 +12,10 @@ object DeepLinkRoutes {
     // -------------------------
     // B站
     // -------------------------
+    fun bilibiliHome(): String {
+        return "bilibili://"
+    }
+
     fun bilibiliVideo(videoId: String): String {
         return "bilibili://video/$videoId"
     }
@@ -23,6 +27,10 @@ object DeepLinkRoutes {
     // -------------------------
     // 知乎
     // -------------------------
+    fun zhihuHome(): String {
+        return "zhihu://"
+    }
+
     fun zhihuQuestion(questionId: String): String {
         return "zhihu://question/$questionId"
     }
@@ -41,6 +49,10 @@ object DeepLinkRoutes {
     // -------------------------
     // 腾讯会议
     // -------------------------
+    fun tencentMeetingHome(): String {
+        return "wemeet://"
+    }
+
     fun tencentMeeting(meetingCode: String): String {
         return "wemeet://page/inmeeting?meeting_code=$meetingCode"
     }

@@ -9,7 +9,17 @@ import androidx.core.app.NotificationCompat
 
 object NotificationHelper {
 
-    private const val CHANNEL_ID = "reminder_channel"
+    const val CHANNEL_ID = "reminder_channel"
+
+    fun createChannel(context: Context) {
+        val channel = NotificationChannel(
+            CHANNEL_ID,
+            "日程提醒",
+            NotificationManager.IMPORTANCE_HIGH
+        )
+        val manager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+        manager.createNotificationChannel(channel)
+    }
 
     fun showNotification(
         context: Context,
@@ -21,14 +31,6 @@ object NotificationHelper {
         val manager =
             context.getSystemService(Context.NOTIFICATION_SERVICE)
                     as NotificationManager
-
-        val channel = NotificationChannel(
-            CHANNEL_ID,
-            "Reminder",
-            NotificationManager.IMPORTANCE_HIGH
-        )
-
-        manager.createNotificationChannel(channel)
 
         val builder =
             NotificationCompat.Builder(context, CHANNEL_ID)

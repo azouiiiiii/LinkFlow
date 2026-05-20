@@ -32,10 +32,16 @@ class ReminderWorker(
             null
         }
 
+        val content = if (reminderType == ReminderType.DYNAMIC && intent == null) {
+            schedule.content + "（未安装对应应用）"
+        } else {
+            schedule.content
+        }
+
         NotificationHelper.showNotification(
             context = applicationContext,
             title = "日程提醒",
-            content = schedule.content,
+            content = content,
             intent = intent
         )
 

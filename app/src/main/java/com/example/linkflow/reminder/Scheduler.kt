@@ -1,5 +1,3 @@
-// 计时器（决定动作触发时机）
-
 package com.example.linkflow.reminder
 
 import android.content.Context
@@ -16,6 +14,11 @@ object Scheduler {
         schedule: Schedule
     ) {
         enqueueWork(context, schedule)
+    }
+
+    fun cancelReminder(context: Context, scheduleId: Int) {
+        WorkManager.getInstance(context)
+            .cancelAllWorkByTag("schedule_$scheduleId")
     }
 
     private fun enqueueWork(
@@ -37,6 +40,7 @@ object Scheduler {
         val request = OneTimeWorkRequestBuilder<ReminderWorker>()
             .setInitialDelay(delay, TimeUnit.MILLISECONDS)
             .setInputData(inputData)
+            .addTag("schedule_${schedule.id}")
             .build()
 
         WorkManager.getInstance(context)

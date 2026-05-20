@@ -10,10 +10,13 @@ class ScheduleRepository(
         return dao.insert(schedule)
     }
 
+    suspend fun update(schedule: Schedule) {
+        dao.update(schedule)
+    }
+
     suspend fun delete(schedule: Schedule) {
         dao.delete(schedule)
     }
 
-    // 🔥 直接暴露 Flow
     val allSchedules: Flow<List<Schedule>> = dao.getAll()
 }

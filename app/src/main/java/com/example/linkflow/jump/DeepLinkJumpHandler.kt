@@ -1,5 +1,3 @@
-// app内功能跳转（如腾讯会议的某具体会议、微信支付等）
-
 package com.example.linkflow.jump
 
 import android.content.Context
@@ -15,18 +13,21 @@ class DeepLinkJumpHandler : JumpHandler {
         schedule: Schedule
     ): Intent? {
 
-        val url = when (schedule.appType) {
+        if (schedule.extraData.isBlank()) return null
 
-            AppType.BROWSER -> {
-                if (schedule.extraData.isBlank())
-                    "https://www.google.com"
-                else
-                    schedule.extraData
-            }
-
+        val uri = when (schedule.appType) {
+            AppType.BILIBILI -> DeepLinkRoutes.bilibiliVideo(schedule.extraData)
+            AppType.ZHIHU -> DeepLinkRoutes.zhihuQuestion(schedule.extraData)
+            AppType.TENCENT_MEETING -> DeepLinkRoutes.tencentMeeting(schedule.extraData)
             else -> return null
         }
 
-        return Intent(Intent.ACTION_VIEW, Uri.parse(url))
+        val intent = Intent(Intent.ACTION_VIEW, Uri.parse(uri))
+
+        return if (intent.resolveActivity(context.packageManager) != null) {
+            intent
+        } else {
+            null
+        }
     }
 }

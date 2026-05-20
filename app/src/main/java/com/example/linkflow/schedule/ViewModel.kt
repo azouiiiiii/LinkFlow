@@ -15,32 +15,24 @@ class ScheduleViewModel(
     application: Application
 ) : AndroidViewModel(application) {
 
-    // 当前选中的日期
     private val _selectedDate = MutableStateFlow("")
 
-    // 根据日期动态过滤
     @OptIn(ExperimentalCoroutinesApi::class)
     val schedulesForSelectedDate: Flow<List<Schedule>> =
         _selectedDate.flatMapLatest { date ->
-
             if (date.isEmpty()) {
-
                 repository.allSchedules
-
             } else {
-
                 repository.allSchedules.map { list ->
                     list.filter { it.date == date }
                 }
             }
         }
 
-    // 更新当前日期
     fun setSelectedDate(date: String) {
         _selectedDate.value = date
     }
 
-    // 添加日程
     fun addSchedule(
         content: String,
         triggerTime: Long,
@@ -49,55 +41,50 @@ class ScheduleViewModel(
         extraData: String,
         reminderType: ReminderType
     ) {
-
         viewModelScope.launch {
-
             val safeTriggerTime =
                 if (triggerTime <= System.currentTimeMillis()) {
-
                     System.currentTimeMillis() + 5000
-
                 } else {
-
                     triggerTime
                 }
 
             val schedule = Schedule(
-
                 date = date,
-
                 content = content,
-
                 triggerTime = safeTriggerTime,
-
                 appType = appType,
-
                 extraData = extraData,
-
                 reminderType = reminderType
             )
 
             val id = repository.insert(schedule)
+            val savedSchedule = schedule.copy(id = id.toInt())
+            val appContext = getApplication<Application>()
 
-            val savedSchedule =
-                schedule.copy(id = id.toInt())
-
-            val appContext =
-                getApplication<Application>()
-
-            Scheduler.scheduleReminder(
-                appContext,
-                savedSchedule
-            )
+            Scheduler.scheduleReminder(appContext, savedSchedule)
         }
     }
 
-    // 删除日程
-    fun deleteSchedule(schedule: Schedule) {
-
+    fun updateSchedule(schedule: Schedule) {
         viewModelScope.launch {
+            val safeSchedule = if (schedule.triggerTime <= System.currentTimeMillis()) {
+                schedule.copy(triggerTime = System.currentTimeMillis() + 5000)
+            } else {
+                schedule
+            }
+            repository.update(safeSchedule)
+            val appContext = getApplication<Application>()
 
+            Scheduler.cancelReminder(appContext, safeSchedule.id)
+            Scheduler.scheduleReminder(appContext, safeSchedule)
+        }
+    }
+
+    fun deleteSchedule(schedule: Schedule) {
+        viewModelScope.launch {
             repository.delete(schedule)
+            Scheduler.cancelReminder(getApplication(), schedule.id)
         }
     }
 }

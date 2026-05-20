@@ -15,15 +15,18 @@ object JumpManager {
         schedule: Schedule
     ): Intent? {
 
-        val handler: JumpHandler = when (schedule.appType) {
-
+        return when (schedule.appType) {
             AppType.BROWSER ->
-                BrowserJumpHandler()
+                BrowserJumpHandler().handle(context, schedule)
 
-            else ->
-                AppJumpHandler()
+            else -> {
+                if (schedule.extraData.isNotBlank()) {
+                    DeepLinkJumpHandler().handle(context, schedule)
+                        ?: AppJumpHandler().handle(context, schedule)
+                } else {
+                    AppJumpHandler().handle(context, schedule)
+                }
+            }
         }
-
-        return handler.handle(context, schedule)
     }
 }

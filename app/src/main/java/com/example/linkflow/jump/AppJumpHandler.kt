@@ -1,11 +1,8 @@
-// 跳转app（包含检测是否安装对应app）
-
 package com.example.linkflow.jump
 
 import android.content.Context
-import android.widget.Toast
 import android.content.Intent
-
+import android.net.Uri
 import com.example.linkflow.schedule.Schedule
 import com.example.linkflow.AppType
 
@@ -16,17 +13,21 @@ class AppJumpHandler : JumpHandler {
         schedule: Schedule
     ): Intent? {
 
-        val target = when (schedule.appType) {
+        val uri = when (schedule.appType) {
+            AppType.WECHAT -> DeepLinkRoutes.wechatHome()
+            AppType.BILIBILI -> DeepLinkRoutes.bilibiliHome()
+            AppType.ZHIHU -> DeepLinkRoutes.zhihuHome()
+            AppType.ALIPAY -> DeepLinkRoutes.alipayHome()
+            AppType.TENCENT_MEETING -> DeepLinkRoutes.tencentMeetingHome()
+            else -> return null
+        }
 
-            AppType.WECHAT -> "com.tencent.mm"
-            AppType.BILIBILI -> "tv.danmaku.bili"
-            AppType.ZHIHU -> "com.zhihu.android"
-            AppType.ALIPAY -> "com.eg.android.AlipayGphone"
-            AppType.TENCENT_MEETING -> "com.tencent.wemeet.app"
-            else -> null
-        } ?: return null
+        val intent = Intent(Intent.ACTION_VIEW, Uri.parse(uri))
 
-        return context.packageManager
-            .getLaunchIntentForPackage(target)
+        return if (intent.resolveActivity(context.packageManager) != null) {
+            intent
+        } else {
+            null
+        }
     }
 }
