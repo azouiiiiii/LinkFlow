@@ -3,6 +3,8 @@ package com.example.linkflow
 import android.app.TimePickerDialog
 import android.os.Build
 import android.os.Bundle
+import android.text.Editable
+import android.text.TextWatcher
 import android.view.View
 import android.widget.*
 import androidx.appcompat.app.AlertDialog
@@ -12,6 +14,7 @@ import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.example.linkflow.data.AppDatabase
+import com.example.linkflow.nlp.KeywordMatcher
 import com.example.linkflow.schedule.*
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
@@ -162,6 +165,23 @@ class MainActivity : AppCompatActivity() {
             ).show()
         }
 
+        inputText.addTextChangedListener(object : TextWatcher {
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
+
+            override fun afterTextChanged(s: Editable?) {
+                if (editingSchedule != null) return
+
+                val content = s?.toString() ?: return
+                val matchedApp = KeywordMatcher.matchAppType(content)
+
+                if (matchedApp != null) {
+                    selectAppInGroup(appGroup, matchedApp)
+                    reminderGroup.check(R.id.dynamicBtn)
+                }
+            }
+        })
+
         addButton.setOnClickListener {
             editingSchedule = null
             inputContainer.visibility = View.VISIBLE
@@ -239,6 +259,18 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    private fun selectAppInGroup(appGroup: RadioGroup, appType: AppType) {
+        val id = when (appType) {
+            AppType.WECHAT -> R.id.wechatBtn
+            AppType.BILIBILI -> R.id.biliBtn
+            AppType.ZHIHU -> R.id.zhihuBtn
+            AppType.ALIPAY -> R.id.alipayBtn
+            AppType.TENCENT_MEETING -> R.id.tencentBtn
+            AppType.BROWSER -> R.id.browserBtn
+        }
+        appGroup.check(id)
+    }
+
     private fun populateFormForEdit(
         schedule: Schedule,
         inputText: EditText,
@@ -268,14 +300,7 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
-        when (schedule.appType) {
-            AppType.WECHAT -> appGroup.check(R.id.wechatBtn)
-            AppType.BILIBILI -> appGroup.check(R.id.biliBtn)
-            AppType.ZHIHU -> appGroup.check(R.id.zhihuBtn)
-            AppType.ALIPAY -> appGroup.check(R.id.alipayBtn)
-            AppType.TENCENT_MEETING -> appGroup.check(R.id.tencentBtn)
-            AppType.BROWSER -> appGroup.check(R.id.browserBtn)
-        }
+        selectAppInGroup(appGroup, schedule.appType)
 
         extraInput.setText(schedule.extraData)
         confirmButton.text = "更新"
