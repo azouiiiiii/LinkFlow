@@ -4,6 +4,20 @@
 
     xmlns:tools="http://schemas.android.com/tools">
 
+    <queries>
+
+        <package android:name="com.tencent.mm"/>
+
+        <package android:name="tv.danmaku.bili"/>
+
+        <package android:name="com.zhihu.android"/>
+
+        <package android:name="com.eg.android.AlipayGphone"/>
+
+        <package android:name="com.tencent.wemeet.app"/>
+
+    </queries>
+
     <application
         android:name=".LinkFlowApplication"
         android:allowBackup="true"

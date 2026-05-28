@@ -1,5 +1,6 @@
 package com.example.linkflow.jump
 
+
 object AppRegistry {
 
     const val WECHAT = "com.tencent.mm"
@@ -12,5 +13,5 @@ object AppRegistry {
 
     const val ZHIHU = "com.zhihu.android"
 
-    const val TAOBAO = "com.taobao.taobao"
+    const val TENCENT_MEETING = "com.tencent.wemeet.app"
 }

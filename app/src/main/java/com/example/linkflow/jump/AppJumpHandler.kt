@@ -13,21 +13,27 @@ class AppJumpHandler : JumpHandler {
         schedule: Schedule
     ): Intent? {
 
-        val uri = when (schedule.appType) {
-            AppType.WECHAT -> DeepLinkRoutes.wechatHome()
-            AppType.BILIBILI -> DeepLinkRoutes.bilibiliHome()
-            AppType.ZHIHU -> DeepLinkRoutes.zhihuHome()
-            AppType.ALIPAY -> DeepLinkRoutes.alipayHome()
-            AppType.TENCENT_MEETING -> DeepLinkRoutes.tencentMeetingHome()
+        val packageName = when (schedule.appType) {
+
+            AppType.WECHAT ->
+                AppRegistry.WECHAT
+
+            AppType.BILIBILI ->
+                AppRegistry.BILIBILI
+
+            AppType.ZHIHU ->
+                AppRegistry.ZHIHU
+
+            AppType.ALIPAY ->
+                AppRegistry.ALIPAY
+
+            AppType.TENCENT_MEETING ->
+                AppRegistry.TENCENT_MEETING
+
             else -> return null
         }
 
-        val intent = Intent(Intent.ACTION_VIEW, Uri.parse(uri))
-
-        return if (intent.resolveActivity(context.packageManager) != null) {
-            intent
-        } else {
-            null
-        }
+        return context.packageManager
+            .getLaunchIntentForPackage(packageName)
     }
 }
