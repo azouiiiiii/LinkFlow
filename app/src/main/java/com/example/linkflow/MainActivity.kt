@@ -29,6 +29,10 @@ class MainActivity : AppCompatActivity() {
     private var editingSchedule: Schedule? = null
     private var selectedTimeMillis = 0L
 
+    private var selectedReminderType = ReminderType.STATIC
+
+    private var selectedAppType = AppType.WECHAT
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
@@ -45,6 +49,7 @@ class MainActivity : AppCompatActivity() {
         val appGroup = findViewById<RadioGroup>(R.id.appGroup)
         val extraInput = findViewById<EditText>(R.id.extraInput)
         val confirmButton = findViewById<Button>(R.id.confirmButton)
+        val cancelButton = findViewById<Button>(R.id.cancelButton)
         val reminderGroup = findViewById<RadioGroup>(R.id.reminderTypeGroup)
         val recyclerView = findViewById<RecyclerView>(R.id.recyclerView)
 
@@ -58,7 +63,21 @@ class MainActivity : AppCompatActivity() {
         viewModel.setSelectedDate(currentSelectedDate)
 
         adapter = ScheduleAdapter(
+
             onItemClick = { schedule ->
+
+                populateFormForEdit(
+                    schedule,
+                    inputText,
+                    inputTime,
+                    reminderGroup,
+                    appGroup,
+                    extraInput,
+                    confirmButton
+                )
+            },
+
+            onItemLongClick = { schedule ->
                 AlertDialog.Builder(this)
                     .setTitle("删除日程")
                     .setMessage("确定删除这个日程吗？")
@@ -67,13 +86,6 @@ class MainActivity : AppCompatActivity() {
                     }
                     .setNegativeButton("取消", null)
                     .show()
-            },
-            onItemLongClick = { schedule ->
-                populateFormForEdit(
-                    schedule, inputText, inputTime,
-                    reminderGroup, appGroup, extraInput,
-                    confirmButton
-                )
             }
         )
 
@@ -90,11 +102,8 @@ class MainActivity : AppCompatActivity() {
             currentSelectedDate =
                 String.format("%d-%02d-%02d", year, month + 1, day)
             viewModel.setSelectedDate(currentSelectedDate)
-            resetForm(inputContainer, addButton, confirmButton)
+            resetForm(inputContainer, addButton, confirmButton, inputText, inputTime, reminderGroup, appGroup, extraInput)
         }
-
-        var selectedReminderType = ReminderType.STATIC
-        var selectedAppType = AppType.WECHAT
 
         reminderGroup.setOnCheckedChangeListener { _, checkedId ->
             selectedReminderType = when (checkedId) {
@@ -191,6 +200,7 @@ class MainActivity : AppCompatActivity() {
             selectedReminderType = ReminderType.STATIC
             appGroup.visibility = View.GONE
             selectedAppType = AppType.WECHAT
+            appGroup.check(R.id.wechatBtn)
             extraInput.setText("")
             inputText.setText("")
             inputTime.setText("")
@@ -254,8 +264,12 @@ class MainActivity : AppCompatActivity() {
                     selectedReminderType
                 )
             }
+            resetForm(inputContainer, addButton, confirmButton, inputText, inputTime, reminderGroup, appGroup, extraInput)
+        }
 
-            resetForm(inputContainer, addButton, confirmButton)
+        cancelButton.setOnClickListener {
+
+            resetForm(inputContainer, addButton, confirmButton, inputText, inputTime, reminderGroup, appGroup, extraInput)
         }
     }
 
@@ -312,11 +326,43 @@ class MainActivity : AppCompatActivity() {
     private fun resetForm(
         inputContainer: LinearLayout,
         addButton: Button,
-        confirmButton: Button
+        confirmButton: Button,
+
+        inputText: EditText,
+        inputTime: EditText,
+
+        reminderGroup: RadioGroup,
+        appGroup: RadioGroup,
+
+        extraInput: EditText
     ) {
+
         editingSchedule = null
+
+        selectedTimeMillis = 0L
+
         inputContainer.visibility = View.GONE
+
         addButton.visibility = View.VISIBLE
+
         confirmButton.text = "保存"
+
+        inputText.setText("")
+
+        inputTime.setText("")
+
+        extraInput.setText("")
+
+        reminderGroup.check(R.id.staticBtn)
+
+        appGroup.check(R.id.wechatBtn)
+
+        appGroup.visibility = View.GONE
+
+        extraInput.visibility = View.GONE
+
+        selectedReminderType = ReminderType.STATIC
+
+        selectedAppType = AppType.WECHAT
     }
 }
