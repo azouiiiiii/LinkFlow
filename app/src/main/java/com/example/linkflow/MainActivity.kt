@@ -120,36 +120,16 @@ class MainActivity : AppCompatActivity() {
         }
 
         appGroup.setOnCheckedChangeListener { _, checkedId ->
-            when (checkedId) {
-                R.id.wechatBtn -> {
-                    selectedAppType = AppType.WECHAT
-                    extraInput.visibility = View.GONE
-                }
-                R.id.biliBtn -> {
-                    selectedAppType = AppType.BILIBILI
-                    extraInput.visibility = View.VISIBLE
-                    extraInput.hint = "请输入视频BV号（可选）"
-                }
-                R.id.zhihuBtn -> {
-                    selectedAppType = AppType.ZHIHU
-                    extraInput.visibility = View.VISIBLE
-                    extraInput.hint = "请输入问题ID（可选）"
-                }
-                R.id.alipayBtn -> {
-                    selectedAppType = AppType.ALIPAY
-                    extraInput.visibility = View.GONE
-                }
-                R.id.tencentBtn -> {
-                    selectedAppType = AppType.TENCENT_MEETING
-                    extraInput.visibility = View.VISIBLE
-                    extraInput.hint = "请输入会议号（可选）"
-                }
-                R.id.browserBtn -> {
-                    selectedAppType = AppType.BROWSER
-                    extraInput.visibility = View.VISIBLE
-                    extraInput.hint = "请输入网址（可选）"
-                }
+            val appType = when (checkedId) {
+                R.id.wechatBtn -> AppType.WECHAT
+                R.id.biliBtn -> AppType.BILIBILI
+                R.id.zhihuBtn -> AppType.ZHIHU
+                R.id.alipayBtn -> AppType.ALIPAY
+                R.id.tencentBtn -> AppType.TENCENT_MEETING
+                R.id.browserBtn -> AppType.BROWSER
+                else -> return@setOnCheckedChangeListener
             }
+            selectAppInGroup(appGroup, extraInput, appType)
         }
 
         inputTime.setOnClickListener {
@@ -185,7 +165,7 @@ class MainActivity : AppCompatActivity() {
                 val matchedApp = KeywordMatcher.matchAppType(content)
 
                 if (matchedApp != null) {
-                    selectAppInGroup(appGroup, matchedApp)
+                    selectAppInGroup(appGroup, extraInput, matchedApp)
                     reminderGroup.check(R.id.dynamicBtn)
                 }
             }
@@ -273,7 +253,9 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private fun selectAppInGroup(appGroup: RadioGroup, appType: AppType) {
+    private fun selectAppInGroup(appGroup: RadioGroup, extraInput: EditText, appType: AppType) {
+        selectedAppType = appType
+
         val id = when (appType) {
             AppType.WECHAT -> R.id.wechatBtn
             AppType.BILIBILI -> R.id.biliBtn
@@ -283,6 +265,28 @@ class MainActivity : AppCompatActivity() {
             AppType.BROWSER -> R.id.browserBtn
         }
         appGroup.check(id)
+
+        when (appType) {
+            AppType.BILIBILI -> {
+                extraInput.visibility = View.VISIBLE
+                extraInput.hint = "请输入视频BV号（可选）"
+            }
+            AppType.ZHIHU -> {
+                extraInput.visibility = View.VISIBLE
+                extraInput.hint = "请输入问题ID（可选）"
+            }
+            AppType.TENCENT_MEETING -> {
+                extraInput.visibility = View.VISIBLE
+                extraInput.hint = "请输入会议号（可选）"
+            }
+            AppType.BROWSER -> {
+                extraInput.visibility = View.VISIBLE
+                extraInput.hint = "请输入网址（可选）"
+            }
+            else -> {
+                extraInput.visibility = View.GONE
+            }
+        }
     }
 
     private fun populateFormForEdit(
@@ -314,7 +318,7 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
-        selectAppInGroup(appGroup, schedule.appType)
+        selectAppInGroup(appGroup, extraInput, schedule.appType)
 
         extraInput.setText(schedule.extraData)
         confirmButton.text = "更新"
